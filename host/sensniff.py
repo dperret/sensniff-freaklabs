@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Copyright (c) 2012, George Oikonomou (oikonomou@users.sf.net)
 # All rights reserved.
