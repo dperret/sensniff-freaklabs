@@ -510,7 +510,7 @@ if __name__ == '__main__':
         h.write('c: Print current RF Channel\n')
         h.write('n: Trigger new pcap header before the next frame\n')
         h.write('h,?: Print this message\n')
-        h.write('[11,26]: Change RF channel\n')
+        h.write('[0,26]: Change RF channel\n')
         h.write('q: Quit')
         h = h.getvalue()
 
@@ -534,7 +534,7 @@ if __name__ == '__main__':
                         logger.info('User requested shutdown')
                         dump_stats()
                         sys.exit(0)
-                    elif int(cmd) in range(11, 27):
+                    elif int(cmd) in range(0, 27):
                         in_handler.set_channel(int(cmd))
                     else:
                         raise ValueError
