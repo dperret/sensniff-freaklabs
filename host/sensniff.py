@@ -538,8 +538,6 @@ if __name__ == '__main__':
                         in_handler.set_channel(int(cmd))
                     else:
                         raise ValueError
-                else:
-                    logger.debug('No user input')
             except select.error:
                 logger.warn('Error while trying to read stdin')
             except ValueError:
