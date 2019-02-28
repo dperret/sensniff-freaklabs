@@ -150,7 +150,7 @@ class SerialInputHandler(object):
             sys.exit(1)
 
         if size == 0:
-            logger.debug('No frame input')
+            # logger.debug('No frame input')
             return b
         if size < 5:
             logger.warn('Read %d bytes but not part of a frame'
