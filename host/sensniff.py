@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Copyright (c) 2012, George Oikonomou (oikonomou@users.sf.net)
 # All rights reserved.
@@ -150,7 +150,7 @@ class SerialInputHandler(object):
             sys.exit(1)
 
         if size == 0:
-            logger.debug('No frame input')
+            # logger.debug('No frame input')
             return b
         if size < 5:
             logger.warn('Read %d bytes but not part of a frame'
@@ -510,7 +510,7 @@ if __name__ == '__main__':
         h.write('c: Print current RF Channel\n')
         h.write('n: Trigger new pcap header before the next frame\n')
         h.write('h,?: Print this message\n')
-        h.write('[11,26]: Change RF channel\n')
+        h.write('[0,26]: Change RF channel\n')
         h.write('q: Quit')
         h = h.getvalue()
 
@@ -534,12 +534,10 @@ if __name__ == '__main__':
                         logger.info('User requested shutdown')
                         dump_stats()
                         sys.exit(0)
-                    elif int(cmd) in range(11, 27):
+                    elif int(cmd) in range(0, 27):
                         in_handler.set_channel(int(cmd))
                     else:
                         raise ValueError
-                else:
-                    logger.debug('No user input')
             except select.error:
                 logger.warn('Error while trying to read stdin')
             except ValueError:
