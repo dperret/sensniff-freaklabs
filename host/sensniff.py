@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright (c) 2012, George Oikonomou (oikonomou@users.sf.net)
 # All rights reserved.
@@ -32,7 +32,6 @@
 # In interactive mode, the user can also input commands from stdin
 
 # ToDo:
-# * Python 3 support
 # * Configuration file support (ConfigParser ?)
 import serial
 import argparse
@@ -42,7 +41,7 @@ import select
 import time
 import stat
 import errno
-import StringIO
+import io
 import logging
 import logging.handlers
 import struct
@@ -99,11 +98,11 @@ class Frame(object):
         self.__pcap_hdr = self.__generate_frame_hdr()
 
         self.pcap = self.__pcap_hdr + self.__raw
-        self.hex = ''.join('%02x ' % ord(c) for c in self.__raw).rstrip()
+        self.hex = ''.join('%02x ' % c for c in self.__raw).rstrip()
 
     def __generate_frame_hdr(self):
         sec = int(self.__t)
-        usec = (self.__t - sec) * 1000000
+        usec = int(self.__t - sec) * 1000000
         return struct.pack(PCAP_FRAME_HDR_FMT,
                            sec, usec, self.len, self.len)
 
@@ -153,7 +152,7 @@ class SerialInputHandler(object):
             # logger.debug('No frame input')
             return b
         if size < 5:
-            logger.warn('Read %d bytes but not part of a frame'
+            logger.warning('Read %d bytes but not part of a frame'
                          % (size,))
             self.port.flushInput()
             return ''
@@ -182,8 +181,8 @@ class SerialInputHandler(object):
             if len(b) != size:
                 # We got the magic right but subsequent bytes did not match
                 # what we expected to receive
-                logger.warn('Read correct magic not followed by a frame')
-                logger.warn('Expected %d bytes, got %d' % (size, len(b)))
+                logger.warning('Read correct magic not followed by a frame')
+                logger.warning('Expected %d bytes, got %d' % (size, len(b)))
                 self.port.flushInput()
                 return ''
 
@@ -202,8 +201,8 @@ class SerialInputHandler(object):
             sys.exit(1)
 
         if size < 2:
-            logger.warn('Read correct magic not followed by a frame header')
-            logger.warn('Expected 2 bytes, got %d' % (len(b), ))
+            logger.warning('Read correct magic not followed by a frame header')
+            logger.warning('Expected 2 bytes, got %d' % (len(b), ))
             self.port.flushInput()
             return ''
 
@@ -216,8 +215,8 @@ class SerialInputHandler(object):
         if len(b) != length:
             # We got the magic right but subsequent bytes did not match
             # what we expected to receive
-            logger.warn('Read correct header not followed by a frame')
-            logger.warn('Expected %d bytes, got %d' % (length, len(b)))
+            logger.warning('Read correct header not followed by a frame')
+            logger.warning('Expected %d bytes, got %d' % (length, len(b)))
             self.port.flushInput()
             return ''
 
@@ -233,9 +232,9 @@ class SerialInputHandler(object):
         if cmd == CMD_CHANNEL:
             # We'll only ever see this if the user asked for it, so we are
             # running interactive. Print away
-            print 'Sniffing in channel: %d' % (b[0],)
+            print('Sniffing in channel: %d' % (b[0],))
         else:
-            logger.warn("Received a command response with unknown code")
+            logger.warning("Received a command response with unknown code")
         return ''
 
     def __write_command(self, cmd):
@@ -244,7 +243,7 @@ class SerialInputHandler(object):
         self.port.write(cmd)
         self.port.flush()
         logger.debug('Sent bytes: '
-                    + ''.join('%02x ' % ord(c) for c in self.__sensniff_magic)
+                    + ''.join('%02x ' % c for c in self.__sensniff_magic)
                     + ('%02x ' % (SNIFFER_PROTO_VERSION))
                     + ''.join('%02x ' % c for c in cmd))
 
@@ -278,7 +277,7 @@ class FifoOutHandler(object):
                                  % (self.out_fifo,))
                     sys.exit(1)
                 else:
-                    logger.warn('FIFO %s exists. Using it' % (self.out_fifo,))
+                    logger.warning('FIFO %s exists. Using it' % (self.out_fifo,))
             else:
                 raise
 
@@ -288,7 +287,7 @@ class FifoOutHandler(object):
             self.of = os.fdopen(fd, 'w')
         except OSError as e:
             if e.errno == errno.ENXIO:
-                logger.warn('Remote end not reading')
+                logger.warning('Remote end not reading')
                 stats['Not Piped'] += 1
                 self.of = None
                 self.needs_pcap_hdr = True
@@ -332,14 +331,14 @@ class PcapDumpOutHandler(object):
             THISZONE, SIGFIGS, SNAPLEN, NETWORK)
 
         try:
-            self.of = open(self.out_pcap, 'w')
+            self.of = open(self.out_pcap, 'wb')
             self.of.write(self.__pcap_global_hdr)
             logger.info("Dumping PCAP to %s" % (self.out_pcap,))
         except IOError as e:
             self.of = None
-            logger.warn("Error opening %s to save pcap. Skipping"
+            logger.warning("Error opening %s to save pcap. Skipping"
                          % (out_pcap))
-            logger.warn("The error was: %d - %s"
+            logger.warning("The error was: %d - %s"
                          % (e.args))
 
     def handle(self, frame):
@@ -358,9 +357,9 @@ class HexdumpOutHandler(object):
             self.of = open(of, 'wb')
             logger.info("Dumping hex to %s" % (of,))
         except IOError as e:
-            logger.warn("Error opening %s for hex dumps. Skipping"
+            logger.warning("Error opening %s for hex dumps. Skipping"
                          % (of))
-            logger.warn("The error was: %d - %s" % (e.args))
+            logger.warning("The error was: %d - %s" % (e.args))
             self.of = None
 
     def handle(self, frame):
@@ -376,9 +375,9 @@ class HexdumpOutHandler(object):
             logger.info('HexdumpOutHandler: Dumped a frame of size %d bytes'
                          % (frame.len))
         except IOError as e:
-            logger.warn("Error writing hex to %s for hex dumps. Skipping"
+            logger.warning("Error writing hex to %s for hex dumps. Skipping"
                      % (self.of))
-            logger.warn("The error was: %d - %s" % (e.args))
+            logger.warning("The error was: %d - %s" % (e.args))
 #####################################
 def arg_parser():
     speed_choices = (9600, 19200, 38400, 57600, 115200, 230400, 460800)
@@ -462,10 +461,10 @@ def arg_parser():
     return parser.parse_args()
 #####################################
 def dump_stats():
-    s = StringIO.StringIO()
+    s = io.StringIO()
 
     s.write('Frame Stats:\n')
-    for k, v in stats.items():
+    for k, v in list(stats.items()):
         s.write('%20s: %d\n' % (k, v))
 
     print(s.getvalue())
@@ -505,7 +504,7 @@ if __name__ == '__main__':
         out_handlers.append(PcapDumpOutHandler(args.pcap))
 
     if args.non_interactive is False:
-        h = StringIO.StringIO()
+        h = io.StringIO()
         h.write('Commands:\n')
         h.write('c: Print current RF Channel\n')
         h.write('n: Trigger new pcap header before the next frame\n')
@@ -516,7 +515,7 @@ if __name__ == '__main__':
 
         e = 'Unknown Command. Type h or ? for help'
 
-        print h
+        print(h)
 
     while 1:
         if args.non_interactive is False:
@@ -525,7 +524,7 @@ if __name__ == '__main__':
                     cmd = sys.stdin.readline().rstrip()
                     logger.debug('User input: "%s"' % (cmd,))
                     if cmd in ('h', '?'):
-                        print h
+                        print(h)
                     elif cmd == 'c':
                         in_handler.get_channel()
                     elif cmd == 'n':
@@ -539,9 +538,9 @@ if __name__ == '__main__':
                     else:
                         raise ValueError
             except select.error:
-                logger.warn('Error while trying to read stdin')
+                logger.warning('Error while trying to read stdin')
             except ValueError:
-                print e
+                print(e)
             except UnboundLocalError:
                 # Raised by command 'n' when -o was specified at command line
                 pass
